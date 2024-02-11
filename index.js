@@ -1,75 +1,123 @@
+import { config } from "dotenv";
 import express from "express";
-import rateLimit from "express-rate-limit";
-import { getClientIp } from "request-ip";
+import { rateLimit } from "express-rate-limit";
+import TelegramBot from "node-telegram-bot-api";
+import User from "./User.Model.js";
+import UserDB from "./user.js";
 
+config();
 const app = express();
 app.use(express.json());
 
-// Rate limiting middleware
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 requests per window
 });
 
-// Apply rate limiter to all routes
 app.use(limiter);
 
-// Middleware function to handle incoming requests
-const requestHandler = (req, res, next) => {
-  // Get IP address using request-ip package
-  const clientIP = getClientIp(req);
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-  // Perform additional checks to prevent spam and excessive requests
-  if (!clientIP) {
-    return res.status(400).json({ error: "Client IP address not found" });
-  }
-
-  // Example: Block requests from a specific IP
-  if (clientIP === "blocked_ip_address") {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
-  // Example: Implement rate limiting for specific IP addresses
-  const ipRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // limit each IP to 50 requests per windowMs
-    keyGenerator: function (req) {
-      // Use client IP as the key for rate limiting
-      return clientIP;
-    },
-    handler: function (req, res, next) {
-      // Custom response when rate limit is exceeded
-      return res.status(429).json({
-        error: "Too many requests from this IP, please try again later",
-      });
-    },
-  });
-
-  // Apply rate limiting only to specific routes or conditions
-  // For example, apply rate limiting only to requests to certain routes
-  // or based on specific conditions such as user authentication status
-  if (req.originalUrl.startsWith("/api")) {
-    ipRateLimit(req, res, next);
-  } else {
-    // Proceed to the next middleware if rate limiting is not applied
-    next();
-  }
-};
-
-// Apply the request handler middleware to all routes
-app.use(requestHandler);
-
-// Your existing route
-app.use("/", (req, res) => {
-  res.json({
-    msg: "Server running...",
-    ipAddresses: req.header("x-forwarded-for"),
-    clientIP: getClientIp(req),
+bot.onText(/\/start/, (msg) => {
+  const chatId = msg.chat.id;
+  const message = `Welcome, 
+To generate your login code, please click \/generatecode
+contact us [Here](https://t.me/DataHunterpointsbot)`;
+  bot.sendMessage(chatId, message, {
+    parse_mode: "MarkdownV2",
   });
 });
 
+bot.onText(/\/generatecode/, async (msg) => {
+  const chatId = msg.chat.id;
+  const randomCode = Math.random().toString(36).substring(2, 12);
+
+  try {
+    await UserDB();
+    let user = await User.findOne({ id: chatId });
+    if (!user) {
+      user = new User({ id: msg.from.id, code: randomCode });
+      await user.save();
+      bot.sendMessage(
+        chatId,
+        `Hello,
+Your registration code is: \`${randomCode}\` \n 
+Login Within In Our App`,
+        {
+          parse_mode: "MarkdownV2",
+        }
+      );
+    } else {
+      const oldCode = user.code;
+      bot.sendMessage(
+        chatId,
+        `Hello,
+  Your registration code is: \`${oldCode}\`\n 
+  Login Within In Our App`,
+        {
+          parse_mode: "MarkdownV2",
+        }
+      );
+    }
+  } catch (error) {
+    console.log("Error generating code:", error);
+    bot.sendMessage(chatId, "An error occurred while generating the code.");
+  }
+});
+
+bot.onText(/\/addpoints/, async (msg) => {
+  const chatId = msg.chat.id;
+  try {
+    await UserDB();
+
+    const isAdmin = await User.findOne({ id: chatId });
+
+    if (!isAdmin) {
+      bot.sendMessage(chatId, "User not found");
+      return;
+    }
+
+    if (isAdmin.id !== ADMIN_05 && isAdmin.id !== ADMIN_USF) {
+      bot.sendMessage(chatId, "Forbidden, Only Admins...");
+      return;
+    }
+
+    await bot.sendMessage(
+      chatId,
+      "Plz,Send Code-Points Of The User For Adding More Points...",
+      {
+        allow_sending_without_reply: false,
+      }
+    );
+
+    bot.once("message", async (msg) => {
+      const code = msg.text;
+      const user = await User.findOne({ code });
+      if (!user) {
+        return bot.sendMessage(chatId, "User not found!");
+      }
+      bot.sendMessage(chatId, "Enter Number Of Points!");
+
+      bot.once("message", async (msg) => {
+        const points = msg.text;
+        user.points = Number(points);
+        await user.save();
+        return bot.sendMessage(
+          chatId,
+          `Done, ${user.code} has ${user.points} now`
+        );
+      });
+    });
+  } catch (error) {
+    console.log("Error adding points:", error);
+    bot.sendMessage(chatId, "Sorry, an error occurred while adding points!");
+  }
+});
+app.get("/", (_req, res) => {
+  res.json({ msg: "Run" });
+});
 // Start the server
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+app.listen(PORT, (_req) => {
   console.log(`Server is running on port ${PORT}`);
 });
