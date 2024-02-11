@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 
 // Enable trust proxy
-app.set('trust proxy', true);
+
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 5 requests per window
@@ -79,7 +79,10 @@ bot.onText(/\/addpoints/, async (msg) => {
       return;
     }
 
-    if (isAdmin.id !== process.env.ADMIN_05 && isAdmin.id !== process.env.ADMIN_USF) {
+    if (
+      isAdmin.id !== process.env.ADMIN_05 &&
+      isAdmin.id !== process.env.ADMIN_USF
+    ) {
       bot.sendMessage(chatId, "Forbidden, Only Admins...");
       return;
     }
