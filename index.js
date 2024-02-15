@@ -89,7 +89,7 @@ bot.onText(/\/addpoints/, async (msg) => {
 
     await bot.sendMessage(
       chatId,
-      "Plz,Send Code-Points Of The User For Adding More Points...",
+      "Plz,Send Code Of The User For Adding More Points...",
       {
         allow_sending_without_reply: false,
       }
@@ -118,6 +118,54 @@ bot.onText(/\/addpoints/, async (msg) => {
     bot.sendMessage(chatId, "Sorry, an error occurred while adding points!");
   }
 });
+
+bot.onText(/\/user/, async (msg) => {
+  const chatId = msg.chat.id;
+  try {
+    await UserDB();
+    const isAdmin = await User.findOne({ id: chatId });
+    if (!isAdmin) {
+      bot.sendMessage(chatId, "User not found");
+      return;
+    }
+    if (
+      isAdmin.id !== process.env.ADMIN_05 &&
+      isAdmin.id !== process.env.ADMIN_USF
+    ) {
+      bot.sendMessage(chatId, "Forbidden, Only Admins...");
+      return;
+    }
+
+    await bot.sendMessage(chatId, "Plz,Send Code Or ID Of The User", {
+      allow_sending_without_reply: false,
+    });
+
+    bot.once("message", async (msg) => {
+      const code = msg.text;
+      const user =
+        (await User.findOne({ code })) || (await User.findOne({ id: code }));
+      if (!user) {
+        return bot.sendMessage(chatId, "User not found!");
+      }
+
+      return bot.sendMessage(
+        chatId,
+        `
+\`\`\`js
+${user}
+\`\`\`
+`,
+        {
+          parse_mode: "MarkdownV2",
+        }
+      );
+    });
+  } catch (error) {
+    console.log("Error", error);
+    bot.sendMessage(chatId, "Sorry,While Searching For User!");
+  }
+});
+
 app.get("/", (_req, res) => {
   res.json({ msg: "Run" });
 });
