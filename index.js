@@ -3,6 +3,7 @@ import express from "express";
 import { rateLimit } from "express-rate-limit";
 import TelegramBot from "node-telegram-bot-api";
 import User from "./User.Model.js";
+import { getFacebookId, isValidFacebookProfileLink } from "./helpers.js";
 import UserDB from "./user.js";
 
 config();
@@ -163,6 +164,37 @@ ${user}
   } catch (error) {
     console.log("Error", error);
     bot.sendMessage(chatId, "Sorry,While Searching For User!");
+  }
+});
+
+bot.onText(/\/facebookId/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  try {
+    bot.sendMessage(chatId, `ارسل رابط حساب الفيس بوك`);
+    bot.once("message", async (msg) => {
+      const link = msg.text;
+
+      if (!isValidFacebookProfileLink(link)) {
+        return bot.sendMessage(
+          chatId,
+          "تأكد من إرسال رابط حساب الفيس بوك بشكل صحيح"
+        );
+      }
+
+      try {
+        const data = await getFacebookId(link);
+        console.log("data:", data);
+        await bot.sendMessage(chatId, `\`${data}\``, {
+          parse_mode: "MarkdownV2",
+        });
+      } catch (error) {
+        console.error("Error fetching Facebook ID:", error);
+        await bot.sendMessage(chatId, "حدث خطأ، حاول مجدداً");
+      }
+    });
+  } catch (error) {
+    bot.sendMessage(chatId, "Error");
   }
 });
 
