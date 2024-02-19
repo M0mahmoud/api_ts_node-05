@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import express from "express";
 import { rateLimit } from "express-rate-limit";
 import TelegramBot from "node-telegram-bot-api";
+import RecentSearch from "./RecentSearch.Model.js";
 import User from "./User.Model.js";
 import { getFacebookId, isValidFacebookProfileLink } from "./helpers.js";
 import UserDB from "./user.js";
@@ -149,15 +150,22 @@ bot.onText(/\/user/, async (msg) => {
         return bot.sendMessage(chatId, "User not found!");
       }
 
+      const recent = await RecentSearch.findOne({ code });
+      let urls;
+      if (recent) {
+        urls = recent.key.join("\n");
+      }
       return bot.sendMessage(
         chatId,
         `
-\`\`\`js
-${user}
-\`\`\`
+id: ${user.id}
+code: ${user.code}
+points: ${user.points}\n
+Recent Search:
+${urls}
 `,
         {
-          parse_mode: "MarkdownV2",
+          parse_mode: "HTML",
         }
       );
     });
