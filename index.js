@@ -175,7 +175,7 @@ ${urls}
   }
 });
 
-bot.onText(/\/facebookId/, async (msg) => {
+bot.onText(/\/facebookid/, async (msg) => {
   const chatId = msg.chat.id;
 
   try {
