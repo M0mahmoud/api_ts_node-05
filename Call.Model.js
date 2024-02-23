@@ -15,4 +15,4 @@ const CallSchema = new Schema({
 
 const Call = model("Call", CallSchema);
 
-export default User;
+export default Call;
