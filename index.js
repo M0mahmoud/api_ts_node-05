@@ -70,7 +70,7 @@ Login Within In Our App`,
   }
 });
 
-bot.onText(/\/usercall/, async (msg) => {
+bot.onText(/\/call/, async (msg) => {
   const chatId = msg.chat.id;
   try {
     await UserDB();
