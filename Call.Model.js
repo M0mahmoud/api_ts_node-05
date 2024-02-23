@@ -1,4 +1,4 @@
-const { Schema, model } = require("mongoose");
+import { Schema, model } from "mongoose";
 
 // Define the User schema
 const CallSchema = new Schema({
@@ -15,4 +15,4 @@ const CallSchema = new Schema({
 
 const Call = model("Call", CallSchema);
 
-module.exports = Call;
+export default User;
