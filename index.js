@@ -80,9 +80,7 @@ bot.onText(/\/call/, async (msg) => {
       return;
     }
     if (
-      isAdmin.id !== process.env.ADMIN_05 &&
-      isAdmin.id !== process.env.ADMIN_USF
-    ) {
+      isAdmin.id !== process.env.ADMIN_05  ) {
       bot.sendMessage(chatId, "Forbidden, Only Admins...");
       return;
     }
@@ -131,9 +129,7 @@ bot.onText(/\/addpoints/, async (msg) => {
     }
 
     if (
-      isAdmin.id !== process.env.ADMIN_05 &&
-      isAdmin.id !== process.env.ADMIN_USF
-    ) {
+      isAdmin.id !== process.env.ADMIN_05   ) {
       bot.sendMessage(chatId, "Forbidden, Only Admins...");
       return;
     }
@@ -180,8 +176,7 @@ bot.onText(/\/user/, async (msg) => {
       return;
     }
     if (
-      isAdmin.id !== process.env.ADMIN_05 &&
-      isAdmin.id !== process.env.ADMIN_USF
+      isAdmin.id !== process.env.ADMIN_05      
     ) {
       bot.sendMessage(chatId, "Forbidden, Only Admins...");
       return;
