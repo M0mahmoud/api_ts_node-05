@@ -80,7 +80,9 @@ bot.onText(/\/call/, async (msg) => {
       return;
     }
     if (
-      isAdmin.id !== process.env.ADMIN_05  ) {
+      isAdmin.id !== process.env.ADMIN_05 &&
+      isAdmin.id !== process.env.ADMIN_USF
+    ) {
       bot.sendMessage(chatId, "Forbidden, Only Admins...");
       return;
     }
@@ -129,7 +131,9 @@ bot.onText(/\/addpoints/, async (msg) => {
     }
 
     if (
-      isAdmin.id !== process.env.ADMIN_05   ) {
+      isAdmin.id !== process.env.ADMIN_05 &&
+      isAdmin.id !== process.env.ADMIN_USF
+    ) {
       bot.sendMessage(chatId, "Forbidden, Only Admins...");
       return;
     }
@@ -176,7 +180,8 @@ bot.onText(/\/user/, async (msg) => {
       return;
     }
     if (
-      isAdmin.id !== process.env.ADMIN_05      
+      isAdmin.id !== process.env.ADMIN_05 &&
+      isAdmin.id !== process.env.ADMIN_USF
     ) {
       bot.sendMessage(chatId, "Forbidden, Only Admins...");
       return;
@@ -194,7 +199,7 @@ bot.onText(/\/user/, async (msg) => {
         return bot.sendMessage(chatId, "User not found!");
       }
 
-      const recent = await RecentSearch.findOne({ code });
+      const recent = await RecentSearch.findOne({ code: user.code });
       let urls;
       if (recent) {
         urls = recent.key.join("\n");
