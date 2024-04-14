@@ -25,9 +25,7 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  const message = `Welcome, 
-To generate your login code, please click \/generatecode
-contact us [Here](https://t.me/DataHunterpointsbot)`;
+  const message = `Welcome\nTo generate your login code,\nplease click \/generatecode \ncontact us [Here](https://t.me/DataHunterpointsbot)`;
   bot.sendMessage(chatId, message, {
     parse_mode: "MarkdownV2",
   });
@@ -45,9 +43,7 @@ bot.onText(/\/generatecode/, async (msg) => {
       await user.save();
       bot.sendMessage(
         chatId,
-        `Hello,
-Your registration code is: \`${randomCode}\` \n 
-Login Within In Our App`,
+        `Hello,\nYour registration code is: \`${randomCode}\` \nLogin Within In Our App`,
         {
           parse_mode: "MarkdownV2",
         }
@@ -56,9 +52,7 @@ Login Within In Our App`,
       const oldCode = user.code;
       bot.sendMessage(
         chatId,
-        `Hello,
-  Your registration code is: \`${oldCode}\`\n 
-  Login Within In Our App`,
+        `Hello,\nYour registration code is: \`${oldCode}\`\nLogin Within In Our App`,
         {
           parse_mode: "MarkdownV2",
         }
@@ -218,6 +212,53 @@ ${urls}
         }
       );
     });
+  } catch (error) {
+    console.log("Error", error);
+    bot.sendMessage(chatId, "Sorry,While Searching For User!");
+  }
+});
+
+bot.onText(/\/details/, async (msg) => {
+  const chatId = msg.chat.id;
+  try {
+    await UserDB();
+    const isAdmin = await User.findOne({ id: chatId });
+    if (!isAdmin) {
+      bot.sendMessage(chatId, "User not found");
+      return;
+    }
+    if (
+      isAdmin.id !== process.env.ADMIN_05 &&
+      isAdmin.id !== process.env.ADMIN_USF
+    ) {
+      bot.sendMessage(chatId, "Forbidden, Only Admins...");
+      return;
+    }
+
+    const allUsers = await User.find({});
+    const allCalls = await Call.find({});
+    const allRecentSearchs = await RecentSearch.find({});
+    const totalUsers = allUsers.length;
+    const totalallCalls = allCalls.length;
+    const totalallRecentSearchs = allRecentSearchs.length;
+
+    let totalPoints = 10 * totalUsers; // Total points initially set to default points
+
+    allUsers.forEach((user) => {
+      totalPoints += user.points - 10; // Subtracting default points and adding user's points
+    });
+
+    const averagePoints = totalPoints / totalUsers;
+
+    return bot.sendMessage(
+      chatId,
+      `<b><i>User Details</i></b>\n<b>Total Users:</b> ${totalUsers}\n<b>Average Points:</b> ${averagePoints.toFixed(
+        2
+      )}\n<b>Total Calls:</b> ${totalallCalls}\n<b>Total RecentSearchs:</b> ${totalallRecentSearchs}`,
+      {
+        parse_mode: "HTML",
+      }
+    );
   } catch (error) {
     console.log("Error", error);
     bot.sendMessage(chatId, "Sorry,While Searching For User!");
