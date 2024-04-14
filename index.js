@@ -198,19 +198,23 @@ bot.onText(/\/user/, async (msg) => {
       if (recent) {
         urls = recent.key.join("\n");
       }
-      return bot.sendMessage(
-        chatId,
-        `
-id: ${user.id}
-code: ${user.code}
-points: ${user.points}\n
-Recent Search:
-${urls}
-`,
-        {
-          parse_mode: "HTML",
-        }
-      );
+      // Construct the message
+      const message = `
+    id: ${user.id}
+    code: ${user.code}
+    points: ${user.points}\n
+    Recent Search:
+    ${urls}
+    `;
+      const MAX_MESSAGE_LENGTH = 4096;
+      const messageChunks = [];
+      for (let i = 0; i < message.length; i += MAX_MESSAGE_LENGTH) {
+        messageChunks.push(message.substring(i, i + MAX_MESSAGE_LENGTH));
+      }
+      // Send each chunk separately
+      for (const chunk of messageChunks) {
+        await bot.sendMessage(chatId, chunk, { parse_mode: "HTML" });
+      }
     });
   } catch (error) {
     console.log("Error", error);
@@ -262,6 +266,73 @@ bot.onText(/\/details/, async (msg) => {
   } catch (error) {
     console.log("Error", error);
     bot.sendMessage(chatId, "Sorry,While Searching For User!");
+  }
+});
+
+bot.onText(/\/sendmsg/, async (msg) => {
+  const chatId = msg.chat.id;
+  let successCount = 0;
+  let failCount = 0;
+  try {
+    await UserDB();
+
+    const isAdmin = await User.findOne({ id: chatId });
+
+    if (!isAdmin) {
+      bot.sendMessage(chatId, "User not found");
+      return;
+    }
+
+    if (
+      isAdmin.id !== process.env.ADMIN_05 &&
+      isAdmin.id !== process.env.ADMIN_USF
+    ) {
+      bot.sendMessage(chatId, "Forbidden, Only Admins...");
+      return;
+    }
+    await bot.sendMessage(chatId, "Enter Msg For Users", {
+      allow_sending_without_reply: false,
+    });
+
+    bot.once("message", async (msg) => {
+      const messageToSend = msg.text;
+      const allUsers = await User.find({});
+
+      for (const [_index, user] of allUsers.entries()) {
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 seconds between each message
+        await bot
+          .sendMessage(user.id, messageToSend)
+          .then(() => {
+            bot.sendMessage(chatId, `Successfully ${user.id}`);
+            successCount++;
+          })
+          .catch((error) => {
+            failCount++;
+            if (
+              error.response &&
+              error.response.body &&
+              error.response.body.description &&
+              error.response.body.description.includes("blocked")
+            ) {
+              bot.sendMessage(
+                chatId,
+                `Failed ${user.id}\nThey have blocked the bot.`
+              );
+            } else {
+              bot.sendMessage(chatId, `Failed ${user.id}\nchat not found`);
+            }
+          });
+      }
+
+      const totalCount = allUsers.length;
+      bot.sendMessage(
+        chatId,
+        `Message sent to all users.\nTotal: ${totalCount}\nSuccess: ${successCount}\nFailed: ${failCount}`
+      );
+    });
+  } catch (error) {
+    console.log("Error adding points:", error);
+    bot.sendMessage(chatId, "Sorry, while sending the message to all users.");
   }
 });
 
